@@ -162,6 +162,8 @@ type Config struct {
 	commonPrefix string
 }
 
+// zhou: README,
+
 // NewCSIVolumeJournal returns an instance of CSIJournal for volumes.
 func NewCSIVolumeJournal(suffix string) *Config {
 	return &Config{
@@ -250,6 +252,8 @@ type Connection struct {
 	// cached cluster connection (required by go-ceph)
 	conn *util.ClusterConnection
 }
+
+// zhou:
 
 // Connect establishes a new connection to a ceph cluster for journal metadata.
 func (cj *Config) Connect(monitors, namespace string, cr *util.Credentials) (*Connection, error) {

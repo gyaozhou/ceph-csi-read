@@ -31,6 +31,7 @@ var (
 	// VolumeName to backing RBD images.
 	volJournal  *journal.Config
 	snapJournal *journal.Config
+
 	// rbdHardMaxCloneDepth is the hard limit for maximum number of nested volume clones that are taken before flatten
 	// occurs.
 	rbdHardMaxCloneDepth uint

@@ -32,6 +32,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
 
+// zhou: RBD CSI driver context
+
 // Driver contains the default identity,node and controller struct.
 type Driver struct {
 	cd  *csicommon.CSIDriver
@@ -80,6 +82,8 @@ func NewNodeServer(
 	return &ns, nil
 }
 
+// zhou: CSI service
+
 // Run start a non-blocking grpc controller,node and identityserver for
 // rbd CSI driver which can serve multiple parallel requests.
 //
@@ -96,6 +100,9 @@ func (r *Driver) Run(conf *util.Config) {
 	rbd.SetGlobalBool("skipForceFlatten", conf.SkipForceFlatten)
 	rbd.SetGlobalInt("maxSnapshotsOnImage", conf.MaxSnapshotsOnImage)
 	rbd.SetGlobalInt("minSnapshotsOnImageToStartFlatten", conf.MinSnapshotsOnImage)
+
+	// zhou: README,
+
 	// Create instances of the volume and snapshot journal
 	rbd.InitJournals(conf.InstanceID)
 
@@ -104,13 +111,18 @@ func (r *Driver) Run(conf *util.Config) {
 	if r.cd == nil {
 		log.FatalLogMsg("Failed to initialize CSI Driver.")
 	}
+
+	// zhou: run as CSI Controller Plugin
+
 	if conf.IsControllerServer || !conf.IsNodeServer {
+
 		r.cd.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{
 			csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
 			csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 			csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 			csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
 		})
+
 		// We only support the multi-writer option when using block, but it's a supported capability for the plugin in
 		// general
 		// In addition, we want to add the remaining modes like MULTI_NODE_READER_ONLY,
@@ -125,6 +137,8 @@ func (r *Driver) Run(conf *util.Config) {
 			})
 	}
 
+	// zhou: make sure NodeName was set in CSI Node Plugin
+
 	if k8s.RunsOnKubernetes() && conf.IsNodeServer {
 		nodeLabels, err = k8s.GetNodeLabels(conf.NodeID)
 		if err != nil {
@@ -132,27 +146,38 @@ func (r *Driver) Run(conf *util.Config) {
 		}
 	}
 
+	// zhou: used in CSI Node Plugin.
+	//       By default, enabled in ODF.
+
 	if conf.EnableReadAffinity {
 		crushLocationMap = util.GetCrushLocationMap(conf.CrushLocationLabels, nodeLabels)
 	}
 
+	// zhou: used to handle CSI Identity Service.
+
 	// Create GRPC servers
 	r.ids = NewIdentityServer(r.cd)
 
+	// zhou: used to handle CSI Node Service.
+
 	if conf.IsNodeServer {
+
 		topology, err = util.GetTopologyFromDomainLabels(conf.DomainLabels, conf.NodeID, conf.DriverName)
 		if err != nil {
 			log.FatalLogMsg(err.Error())
 		}
+
 		r.ns, err = NewNodeServer(r.cd, conf.Vtype, nodeLabels, topology, crushLocationMap)
 		if err != nil {
 			log.FatalLogMsg("failed to start node server, err %v\n", err)
 		}
+
 		var attr string
 		attr, err = rbd.GetKrbdSupportedFeatures()
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			log.FatalLogMsg(err.Error())
 		}
+
 		var krbdFeatures uint
 		krbdFeatures, err = rbd.HexStringToInteger(attr)
 		if err != nil {
@@ -163,11 +188,16 @@ func (r *Driver) Run(conf *util.Config) {
 		rbd.SetRbdNbdToolFeatures()
 	}
 
+	// zhou: used to handle CSI Controller Service.
+
 	if conf.IsControllerServer {
 		r.cs = NewControllerServer(r.cd)
 		r.cs.ClusterName = conf.ClusterName
 		r.cs.SetMetadata = conf.SetMetadata
 	}
+
+	// zhou: used to handle CSI addon Service
+	//       By default, CSI addon sidecar will be enabed in ODF.
 
 	// configure CSI-Addons server and components
 	err = r.setupCSIAddonsServer(conf)
@@ -181,9 +211,14 @@ func (r *Driver) Run(conf *util.Config) {
 		CS: r.cs,
 		NS: r.ns,
 	}
+
+	// zhou: run them in seperate go routine.
+
 	s.Start(conf.Endpoint, srv)
 
 	r.startProfiling(conf)
+
+	// zhou: README,
 
 	if conf.IsNodeServer {
 		go func() {
@@ -196,6 +231,8 @@ func (r *Driver) Run(conf *util.Config) {
 	}
 	s.Wait()
 }
+
+// zhou: used to handle CSI addon Service
 
 // setupCSIAddonsServer creates a new CSI-Addons Server on the given (URL)
 // endpoint. The supported CSI-Addons operations get registered as their own

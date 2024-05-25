@@ -240,6 +240,8 @@ func checkSnapCloneExists(
 	return true, nil
 }
 
+// zhou: README,
+
 /*
 Check comment on checkSnapExists, to understand how this function behaves
 
@@ -456,6 +458,8 @@ func updateTopologyConstraints(rbdVol *rbdVolume, rbdSnap *rbdSnapshot) error {
 
 	return nil
 }
+
+// zhou: README,
 
 // reserveVol is a helper routine to request a rbdVolume name reservation and generate the
 // volume ID for the generated name.
@@ -682,6 +686,8 @@ func RegenerateJournal(
 
 	return rbdVol.VolID, nil
 }
+
+// zhou: README,
 
 // storeImageID retrieves the image ID and stores it in OMAP.
 func (rv *rbdVolume) storeImageID(ctx context.Context, j *journal.Connection) error {

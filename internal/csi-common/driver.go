@@ -37,6 +37,8 @@ type CSIDriver struct {
 	vc                []*csi.VolumeCapability_AccessMode
 }
 
+// zhou: RBD/Ceph/NFS driver common capabilites.
+
 // NewCSIDriver Creates a NewCSIDriver object. Assumes vendor
 // version is equal to driver version &  does not support optional
 // driver plugin info manifest field. Refer to CSI spec for more details.

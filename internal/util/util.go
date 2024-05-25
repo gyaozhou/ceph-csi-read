@@ -84,6 +84,8 @@ var (
 	DriverVersion string
 )
 
+// zhou: README, filled by cli parameters
+
 // Config holds the parameters list which can be configured.
 type Config struct {
 	Vtype           string // driver type [rbd|cephfs|liveness|controller]
@@ -101,6 +103,8 @@ type Config struct {
 
 	// CSI-Addons endpoint
 	CSIAddonsEndpoint string
+
+	// zhou: defined in cli
 
 	// Cluster name
 	ClusterName string

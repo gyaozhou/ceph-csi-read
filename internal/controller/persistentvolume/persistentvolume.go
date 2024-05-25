@@ -203,6 +203,9 @@ func (r *ReconcilePersistentVolume) reconcilePV(ctx context.Context, obj runtime
 	return nil
 }
 
+// zhou: CephCSI Controller, not CSI Controller.
+//       README, Used to update omap for PV.
+
 // Reconcile reconciles the PersistentVolume object and creates a new omap entries
 // for the volume.
 func (r *ReconcilePersistentVolume) Reconcile(ctx context.Context,

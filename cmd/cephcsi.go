@@ -61,7 +61,7 @@ var conf util.Config
 
 func init() {
 	// common flags
-	flag.StringVar(&conf.Vtype, "type", "", "driver type [rbd|cephfs|nfs|liveness|controller]")
+	flag.StringVar(&conf.Vtype, "type", "", "driver type [rbd|cephfs|nfs|liveness|controller]") // zhou: container role
 	flag.StringVar(&conf.Endpoint, "endpoint", "unix:///tmp/csi.sock", "CSI endpoint")
 	flag.StringVar(&conf.DriverName, "drivername", "", "name of the driver")
 	flag.StringVar(&conf.DriverNamespace, "drivernamespace", defaultNS, "namespace in which driver is deployed")
@@ -73,15 +73,23 @@ func init() {
 	flag.StringVar(&conf.InstanceID, "instanceid", "", "Unique ID distinguishing this instance of Ceph CSI among other"+
 		" instances, when sharing Ceph clusters across CSI instances for provisioning")
 	flag.IntVar(&conf.PidLimit, "pidlimit", 0, "the PID limit to configure through cgroups")
+
+	// zhou: work as CSI Plugin Server or Node Plugin Server
+
 	flag.BoolVar(&conf.IsControllerServer, "controllerserver", false, "start cephcsi controller server")
 	flag.BoolVar(&conf.IsNodeServer, "nodeserver", false, "start cephcsi node server")
+
 	flag.StringVar(
 		&conf.DomainLabels,
 		"domainlabels",
 		"",
 		"list of Kubernetes node labels, that determines the topology"+
 			" domain the node belongs to, separated by ','")
+
+	// zhou: README, read affinity to improve read performance
+
 	flag.BoolVar(&conf.EnableReadAffinity, "enable-read-affinity", false, "enable read affinity")
+
 	flag.StringVar(
 		&conf.CrushLocationLabels,
 		"crush-location-labels",
@@ -115,6 +123,8 @@ func init() {
 		"path of prometheus endpoint where metrics will be available")
 	flag.DurationVar(&conf.PollTime, "polltime", time.Second*pollTime, "time interval in seconds between each poll")
 	flag.DurationVar(&conf.PoolTimeout, "timeout", time.Second*probeTimeout, "probe timeout in seconds")
+
+	// zhou: RBD Clone and Snapshot limit
 
 	flag.UintVar(
 		&conf.RbdHardMaxCloneDepth,
@@ -153,6 +163,9 @@ func init() {
 }
 
 func getDriverName() string {
+
+	// zhou: "--drivername=rbd.csi.ceph.com" was set for all containers within RBD csi driver
+
 	// was explicitly passed a driver name
 	if conf.DriverName != "" {
 		return conf.DriverName
@@ -194,6 +207,8 @@ func main() {
 		logAndExit("driver type not specified")
 	}
 
+	// zhou: e.g. "rbd.csi.ceph.com"
+
 	dname := getDriverName()
 	err := util.ValidateDriverName(dname)
 	if err != nil {
@@ -220,11 +235,19 @@ func main() {
 		log.FatalLogMsg("failed to write ceph configuration file (%v)", err)
 	}
 
+	// zhou: [rbd|cephfs|nfs|liveness|controller], OCP using rbd/cephfs/nfs only.
+
 	log.DefaultLog("Starting driver type: %v with name: %v", conf.Vtype, dname)
 	switch conf.Vtype {
 	case rbdType:
+
+		// zhou: Clone and Snpshot depth limit
+
 		validateCloneDepthFlag(&conf)
 		validateMaxSnapshotFlag(&conf)
+
+		// zhou: RBD main loop, used in both CSI both Controller Server and Node Server
+
 		driver := rbddriver.NewDriver()
 		driver.Run(&conf)
 
@@ -240,6 +263,9 @@ func main() {
 		liveness.Run(&conf)
 
 	case controllerType:
+
+		// zhou:
+
 		cfg := controller.Config{
 			DriverName:  dname,
 			Namespace:   conf.DriverNamespace,
@@ -256,6 +282,8 @@ func main() {
 
 	os.Exit(0)
 }
+
+// zhou: only valid for CSI Node Plugin
 
 func setPIDLimit(conf *util.Config) {
 	// set pidLimit only for NodeServer

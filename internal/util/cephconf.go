@@ -38,6 +38,8 @@ func createCephConfigRoot() error {
 	return os.MkdirAll(cephConfigRoot, 0o755) // #nosec
 }
 
+// zhou: create file in Pod "/etc/ceph/ceph.conf"
+
 // WriteCephConfig writes out a basic ceph.conf file, making it easy to use
 // ceph related CLIs.
 func WriteCephConfig() error {

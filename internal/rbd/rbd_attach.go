@@ -336,6 +336,8 @@ func (ns *NodeServer) getMapOptions(req *csi.NodeStageVolumeRequest, rv *rbdVolu
 	return nil
 }
 
+// zhou: README,
+
 func attachRBDImage(ctx context.Context, volOptions *rbdVolume, device string, cr *util.Credentials) (string, error) {
 	var err error
 
@@ -357,6 +359,9 @@ func attachRBDImage(ctx context.Context, volOptions *rbdVolume, device string, c
 		if err != nil {
 			return "", err
 		}
+
+		// zhou: core function to mapping RBD image to host
+
 		devicePath, err = createPath(ctx, volOptions, device, cr)
 	}
 
@@ -430,6 +435,8 @@ func appendRbdNbdCliOptions(cmdArgs []string, userOptions, cookie string) []stri
 	return cmdArgs
 }
 
+// zhou: README, core function to mapping RBD image to host
+
 func createPath(ctx context.Context, volOpt *rbdVolume, device string, cr *util.Credentials) (string, error) {
 	isNbd := false
 	imagePath := volOpt.String()
@@ -477,6 +484,8 @@ func createPath(ctx context.Context, volOpt *rbdVolume, device string, cr *util.
 		err    error
 	)
 
+	// zhou: why stil no RESTful API
+
 	if volOpt.NetNamespaceFilePath != "" {
 		stdout, stderr, err = util.ExecuteCommandWithNSEnter(ctx, volOpt.NetNamespaceFilePath, cli, mapArgs...)
 	} else {
@@ -508,6 +517,8 @@ func createPath(ctx context.Context, volOpt *rbdVolume, device string, cr *util.
 
 	return devicePath, nil
 }
+
+// zhou: README,
 
 func waitForrbdImage(ctx context.Context, backoff wait.Backoff, volOptions *rbdVolume) error {
 	imagePath := volOptions.String()

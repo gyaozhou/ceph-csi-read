@@ -41,6 +41,8 @@ type Credentials struct {
 	KeyFile string
 }
 
+// zhou: key will be stored in a temp file.
+
 func storeKey(key string) (string, error) {
 	tmpfile, err := os.CreateTemp(tmpKeyFileLocation, tmpKeyFileNamePrefix)
 	if err != nil {

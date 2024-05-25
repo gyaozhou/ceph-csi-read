@@ -84,6 +84,8 @@ const (
 	clusterNameKey = "csi.ceph.com/cluster/name"
 )
 
+// zhou: base struct, used to handle connection with Ceph
+
 // rbdImage contains common attributes and methods for the rbdVolume and
 // rbdSnapshot types.
 type rbdImage struct {
@@ -149,6 +151,8 @@ type rbdImage struct {
 	// ParentInTrash indicates the parent image is in trash.
 	ParentInTrash bool
 }
+
+// zhou: context
 
 // rbdVolume represents a CSI volume and its RBD image specifics.
 type rbdVolume struct {
@@ -367,6 +371,8 @@ func isKrbdFeatureSupported(ctx context.Context, imageFeatures string) (bool, er
 	return supported, nil
 }
 
+// zhou:
+
 // Connect an rbdVolume to the Ceph cluster.
 func (ri *rbdImage) Connect(cr *util.Credentials) error {
 	if ri.conn != nil {
@@ -417,6 +423,8 @@ func (rs *rbdSnapshot) String() string {
 
 	return fmt.Sprintf("%s/%s@%s", rs.Pool, rs.RbdImageName, rs.RbdSnapName)
 }
+
+// zhou: README,
 
 // createImage creates a new ceph image with provision and volume options.
 func createImage(ctx context.Context, pOpts *rbdVolume, cr *util.Credentials) error {
@@ -1265,6 +1273,8 @@ func generateVolumeFromMapping(
 	return vol, util.ErrPoolNotFound
 }
 
+// zhou: README,
+
 func genVolFromVolumeOptions(
 	ctx context.Context,
 	volOptions map[string]string,
@@ -1294,6 +1304,7 @@ func genVolFromVolumeOptions(
 	if err != nil {
 		return nil, err
 	}
+
 	rbdVol.Monitors, rbdVol.ClusterID, err = util.GetMonsAndClusterID(ctx, clusterID, checkClusterIDMapping)
 	if err != nil {
 		log.ErrorLog(ctx, "failed getting mons (%s)", err)
@@ -2117,6 +2128,8 @@ func genVolFromVolIDWithMigration(
 
 	return rv, err
 }
+
+// zhou: README,
 
 // setAllMetadata set all the metadata from arg parameters on RBD image.
 func (rv *rbdVolume) setAllMetadata(parameters map[string]string) error {

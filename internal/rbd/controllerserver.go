@@ -145,6 +145,8 @@ func validateStriping(parameters map[string]string) error {
 	return nil
 }
 
+// zhou: README,
+
 // parseVolCreateRequest take create volume `request` argument and make use of the
 // request arguments for subsequent calls.
 func (cs *ControllerServer) parseVolCreateRequest(
@@ -169,6 +171,8 @@ func (cs *ControllerServer) parseVolCreateRequest(
 			codes.InvalidArgument,
 			"multi node access modes are only supported on rbd `block` type volumes")
 	}
+
+	// zhou: check RBD image features
 
 	if imageFeatures, ok := req.GetParameters()["imageFeatures"]; !checkValidImageFeatures(imageFeatures, ok) {
 		return nil, status.Error(codes.InvalidArgument, "empty imageFeatures parameter")
@@ -313,11 +317,14 @@ func checkValidCreateVolumeRequest(rbdVol, parentVol *rbdVolume, rbdSnap *rbdSna
 	return nil
 }
 
+// zhou: README,
+
 // CreateVolume creates the volume in backend.
 func (cs *ControllerServer) CreateVolume(
 	ctx context.Context,
 	req *csi.CreateVolumeRequest,
 ) (*csi.CreateVolumeResponse, error) {
+
 	err := cs.validateVolumeReq(ctx, req)
 	if err != nil {
 		return nil, err
@@ -331,11 +338,15 @@ func (cs *ControllerServer) CreateVolume(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer cr.DeleteCredentials()
+
+	// zhou: setup context
+
 	rbdVol, err := cs.parseVolCreateRequest(ctx, req, cr)
 	if err != nil {
 		return nil, err
 	}
 	defer rbdVol.Destroy()
+
 	// Existence and conflict checks
 	if acquired := cs.VolumeLocks.TryAcquire(req.GetName()); !acquired {
 		log.ErrorLog(ctx, util.VolumeOperationAlreadyExistsFmt, req.GetName())
@@ -355,6 +366,8 @@ func (cs *ControllerServer) CreateVolume(
 		defer rbdSnap.Destroy()
 	}
 
+	// zhou: README,
+
 	err = updateTopologyConstraints(rbdVol, rbdSnap)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -370,12 +383,17 @@ func (cs *ControllerServer) CreateVolume(
 	err = checkValidCreateVolumeRequest(rbdVol, parentVol, rbdSnap)
 	if err != nil {
 		return nil, err
+
 	}
+
+	// zhou:
 
 	err = flattenParentImage(ctx, parentVol, rbdSnap, cr)
 	if err != nil {
 		return nil, err
 	}
+
+	// zhou:
 
 	err = reserveVol(ctx, rbdVol, cr)
 	if err != nil {
@@ -390,6 +408,8 @@ func (cs *ControllerServer) CreateVolume(
 		}
 	}()
 
+	// zhou:
+
 	err = cs.createBackingImage(ctx, cr, req.GetSecrets(), rbdVol, parentVol, rbdSnap)
 	if err != nil {
 		if errors.Is(err, ErrFlattenInProgress) {
@@ -398,6 +418,8 @@ func (cs *ControllerServer) CreateVolume(
 
 		return nil, err
 	}
+
+	// zhou:
 
 	// Set Metadata on PV Create
 	metadata := k8s.GetVolumeMetadata(req.GetParameters())
@@ -412,6 +434,8 @@ func (cs *ControllerServer) CreateVolume(
 
 	return buildCreateVolumeResponse(req, rbdVol), nil
 }
+
+// zhou: README
 
 // flattenParentImage is to be called before proceeding with creating volume,
 // with datasource. This function flattens the parent image accordingly to
@@ -714,6 +738,8 @@ func (cs *ControllerServer) createVolumeFromSnapshot(
 	return nil
 }
 
+// zhou: README,
+
 func (cs *ControllerServer) createBackingImage(
 	ctx context.Context,
 	cr *util.Credentials,
@@ -752,6 +778,9 @@ func (cs *ControllerServer) createBackingImage(
 
 		return rbdVol.createCloneFromImage(ctx, parentVol)
 	default:
+
+		// zhou: ordinary path
+
 		err = createImage(ctx, rbdVol, cr)
 		if err != nil {
 			log.ErrorLog(ctx, "failed to create volume: %v", err)
@@ -769,6 +798,9 @@ func (cs *ControllerServer) createBackingImage(
 			}
 		}
 	}()
+
+	// zhou:
+
 	err = rbdVol.storeImageID(ctx, j)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
@@ -777,14 +809,19 @@ func (cs *ControllerServer) createBackingImage(
 	return nil
 }
 
+// zhou: README,
+
 func checkContentSource(
 	ctx context.Context,
 	req *csi.CreateVolumeRequest,
 	cr *util.Credentials,
 ) (*rbdVolume, *rbdSnapshot, error) {
+
+	// zhou: ordinary path
 	if req.GetVolumeContentSource() == nil {
 		return nil, nil, nil
 	}
+
 	volumeSource := req.GetVolumeContentSource()
 	switch volumeSource.GetType().(type) {
 	case *csi.VolumeContentSource_Snapshot:
@@ -1633,11 +1670,14 @@ func (cs *ControllerServer) ControllerExpandVolume(
 	}, nil
 }
 
+// zhou: README, CSI ControllerPublish do nothing.
+
 // ControllerPublishVolume is a dummy publish implementation to mimic a successful attach operation being a NOOP.
 func (cs *ControllerServer) ControllerPublishVolume(
 	ctx context.Context,
 	req *csi.ControllerPublishVolumeRequest,
 ) (*csi.ControllerPublishVolumeResponse, error) {
+
 	if req.GetVolumeId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID cannot be empty")
 	}

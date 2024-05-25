@@ -19,6 +19,10 @@ deploy/cephcsi/image/cephcsi
 *.patch
 *.rej
 
+# ide
+cscope.files
+cscope.out
+
 # generated golangci-lint configuration
 scripts/golangci.yml
 scripts/golangci.yml.buildtags.in

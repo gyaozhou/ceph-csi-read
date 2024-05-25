@@ -288,6 +288,8 @@ func (rv *rbdVolume) appendReadAffinityMapOptions(readAffinityMapOptions string)
 	}
 }
 
+// zhou: README,
+
 // NodeStageVolume mounts the volume to a staging path on the node.
 // Implementation notes:
 // - stagingTargetPath is the directory passed in the request where the volume needs to be staged
@@ -316,6 +318,7 @@ func (ns *NodeServer) NodeStageVolume(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer cr.DeleteCredentials()
+
 	if acquired := ns.VolumeLocks.TryAcquire(volID); !acquired {
 		log.ErrorLog(ctx, util.VolumeOperationAlreadyExistsFmt, volID)
 
@@ -367,6 +370,8 @@ func (ns *NodeServer) NodeStageVolume(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// zhou:
+
 	// perform the actual staging and if this fails, have undoStagingTransaction
 	// cleans up for us
 	txn, err := ns.stageTransaction(ctx, req, cr, rv, isStaticVol)
@@ -388,6 +393,8 @@ func (ns *NodeServer) NodeStageVolume(
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
+// zhou: README,
+
 func (ns *NodeServer) stageTransaction(
 	ctx context.Context,
 	req *csi.NodeStageVolumeRequest,
@@ -406,10 +413,14 @@ func (ns *NodeServer) stageTransaction(
 		volOptions.readOnly = true
 	}
 
+	// zhou:
+
 	err = flattenImageBeforeMapping(ctx, volOptions)
 	if err != nil {
 		return transaction, err
 	}
+
+	// zhou:
 
 	// Mapping RBD image
 	var devicePath string
@@ -575,6 +586,8 @@ func resizeEncryptedDevice(ctx context.Context, volID, stagingTargetPath, device
 	return mapperPath, nil
 }
 
+// zhou: README,
+
 func flattenImageBeforeMapping(
 	ctx context.Context,
 	volOptions *rbdVolume,
@@ -692,6 +705,8 @@ func (ns *NodeServer) createStageMountPoint(ctx context.Context, mountPath strin
 
 	return nil
 }
+
+// zhou: README,
 
 // NodePublishVolume mounts the volume mounted to the device path to the target
 // path.
@@ -846,6 +861,8 @@ func (ns *NodeServer) mountVolumeToStagePath(
 
 	return err
 }
+
+// zhou: README,
 
 func (ns *NodeServer) mountVolume(ctx context.Context, stagingPath string, req *csi.NodePublishVolumeRequest) error {
 	// Publish Path
